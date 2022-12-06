@@ -1,3 +1,3 @@
-module github.com/median/CaptchaGO
+module github.com/median/captchago
 
 go 1.18
