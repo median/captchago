@@ -86,7 +86,7 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 
 			errMsg, hasError := body["errorDescription"]
 			if hasError && errMsg != nil {
-				return nil, errMsg.(error)
+				return nil, errors.New(errMsg.(string))
 			}
 
 			status := body["status"]
@@ -252,42 +252,43 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 			}
 
 			if o.EnterprisePayload != nil {
-				// capmonsters api is slightly different
-				if solver.service == CapMonster && o.EnterprisePayload.RQData != "" {
+				// some apis are slightly different
+				if o.EnterprisePayload.RQData != "" {
 					taskData["data"] = o.EnterprisePayload.RQData
-				} else {
-					ep := o.EnterprisePayload
-
-					payload := map[string]interface{}{
-						"sentry": ep.Sentry,
-					}
-
-					if ep.RQData != "" {
-						payload["rqdata"] = ep.RQData
-					}
-
-					if ep.APIEndpoint != "" {
-						payload["apiEndpoint"] = ep.APIEndpoint
-					}
-
-					if ep.Endpoint != "" {
-						payload["endpoint"] = ep.APIEndpoint
-					}
-
-					if ep.ReportAPI != "" {
-						payload["reportapi"] = ep.ReportAPI
-					}
-
-					if ep.AssetHost != "" {
-						payload["assethost"] = ep.AssetHost
-					}
-
-					if ep.ImgHost != "" {
-						payload["imghost"] = ep.ImgHost
-					}
-
-					taskData["enterprisePayload"] = payload
 				}
+
+				ep := o.EnterprisePayload
+
+				payload := map[string]interface{}{
+					"sentry": ep.Sentry,
+				}
+
+				if ep.RQData != "" {
+					payload["rqdata"] = ep.RQData
+				}
+
+				if ep.APIEndpoint != "" {
+					payload["apiEndpoint"] = ep.APIEndpoint
+				}
+
+				if ep.Endpoint != "" {
+					payload["endpoint"] = ep.APIEndpoint
+				}
+
+				if ep.ReportAPI != "" {
+					payload["reportapi"] = ep.ReportAPI
+				}
+
+				if ep.AssetHost != "" {
+					payload["assethost"] = ep.AssetHost
+				}
+
+				if ep.ImgHost != "" {
+					payload["imghost"] = ep.ImgHost
+				}
+
+				taskData["enterprisePayload"] = payload
+
 			}
 
 			return createResponse(taskData)
