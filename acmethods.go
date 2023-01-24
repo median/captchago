@@ -48,7 +48,7 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 		}
 
 		createErr, hasError := body["errorDescription"]
-		if hasError {
+		if hasError && createErr != nil {
 			return 0, errors.New(createErr.(string))
 		}
 
@@ -85,7 +85,7 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 			}
 
 			errMsg, hasError := body["errorDescription"]
-			if hasError {
+			if hasError && errMsg != nil {
 				return nil, errMsg.(error)
 			}
 
@@ -115,11 +115,24 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 					return nil, errors.New("no solution text")
 				}
 
+				ip := ""
+				cost := ""
+
+				rIP, hasIP := body["ip"]
+				if hasIP && rIP != nil {
+					ip = rIP.(string)
+				}
+
+				rCost, hasCost := body["cost"]
+				if hasCost && rCost != nil {
+					cost = rCost.(string)
+				}
+
 				return &Solution{
 					TaskId: taskId,
 					Text:   response.(string),
-					IP:     body["ip"].(string),
-					Cost:   body["cost"].(string),
+					IP:     ip,
+					Cost:   cost,
 				}, nil
 			default:
 				return nil, errors.New("unknown status")
@@ -186,7 +199,7 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 			}
 
 			errMsg, hasError := body["errorDescription"]
-			if hasError {
+			if hasError && errMsg != nil {
 				return 0, errors.New(errMsg.(string))
 			}
 
@@ -239,34 +252,41 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 			}
 
 			if o.EnterprisePayload != nil {
-				ep := o.EnterprisePayload
+				// capmonsters api is slightly different
+				if solver.service == CapMonster && o.EnterprisePayload.RQData != "" {
+					taskData["data"] = o.EnterprisePayload.RQData
+				} else {
+					ep := o.EnterprisePayload
 
-				payload := map[string]interface{}{
-					"sentry": ep.Sentry,
-				}
+					payload := map[string]interface{}{
+						"sentry": ep.Sentry,
+					}
 
-				if ep.RQData != "" {
-					payload["rqdata"] = ep.RQData
-				}
+					if ep.RQData != "" {
+						payload["rqdata"] = ep.RQData
+					}
 
-				if ep.APIEndpoint != "" {
-					payload["apiEndpoint"] = ep.APIEndpoint
-				}
+					if ep.APIEndpoint != "" {
+						payload["apiEndpoint"] = ep.APIEndpoint
+					}
 
-				if ep.Endpoint != "" {
-					payload["endpoint"] = ep.APIEndpoint
-				}
+					if ep.Endpoint != "" {
+						payload["endpoint"] = ep.APIEndpoint
+					}
 
-				if ep.ReportAPI != "" {
-					payload["reportapi"] = ep.ReportAPI
-				}
+					if ep.ReportAPI != "" {
+						payload["reportapi"] = ep.ReportAPI
+					}
 
-				if ep.AssetHost != "" {
-					payload["assethost"] = ep.AssetHost
-				}
+					if ep.AssetHost != "" {
+						payload["assethost"] = ep.AssetHost
+					}
 
-				if ep.ImgHost != "" {
-					payload["imghost"] = ep.ImgHost
+					if ep.ImgHost != "" {
+						payload["imghost"] = ep.ImgHost
+					}
+
+					taskData["enterprisePayload"] = payload
 				}
 			}
 
