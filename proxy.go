@@ -1,4 +1,4 @@
-package CaptchaGO
+package captchago
 
 import (
 	"strconv"
