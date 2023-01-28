@@ -1,7 +1,7 @@
 # CaptchaGO
 Easily integrate and support many different captcha APIs in your Go project.
 
-[View usage examples]("https://github.com/median/captchago/examples")
+[View usage examples]("examples")
 
 ## Supported Services
 - [x] [2captcha (ruCaptcha)](https://2captcha.com)
