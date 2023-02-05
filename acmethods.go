@@ -14,11 +14,13 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 			r = solver.ForcedDomain
 		}
 
-		// detects if it's an ip or a domain
-		if strings.Contains(r, ":") || strings.Count(r, ".") == 4 {
-			r = "http://" + r
-		} else {
-			r = "https://" + r
+		if !strings.Contains(r, "://") {
+			// detects if it's an ip or a domain
+			if strings.Contains(r, ":") || strings.Count(r, ".") == 4 {
+				r = "http://" + r
+			} else {
+				r = "https://" + r
+			}
 		}
 
 		return r
@@ -33,13 +35,9 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 		}
 
 		if strings.Contains(d, "anti-captcha.com") {
-			payload["softId"] = 1029
+			payload["softId"] = 1080
 		} else if strings.Contains(d, "capmonster.cloud") {
 			payload["softId"] = 59
-		} else if strings.Contains(d, "api.capsolver.com") {
-			payload["softId"] = 1029 // TODO: get softId for capsolver
-		} else if strings.Contains(d, "api.anycaptcha.com") {
-			payload["softId"] = 1029 // TODO: get softId for anycaptcha
 		}
 
 		body, err := postJSON(d+"/createTask", payload)

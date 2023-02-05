@@ -55,13 +55,29 @@ func (s *Solver) SetService(service SolveService) error {
 	return nil
 }
 
+func (s *Solver) IsValidService(service SolveService) bool {
+	service = formatService(service)
+
+	switch service {
+	case AntiCaptcha, AnyCaptcha, CapMonster, CapSolver, TwoCaptcha:
+		return true
+	}
+
+	return false
+}
+
 func (s *Solver) GetService() SolveService {
 	return s.service
 }
 
 // formatService formats the service name to reduce the chance of human errors
 func formatService(s SolveService) SolveService {
+	// remove spaces, dashes, and tlds
 	s = strings.ReplaceAll(strings.ReplaceAll(strings.ToLower(s), " ", ""), "-", "")
+	s = strings.Split(s, ".")[0]
+	if strings.Contains(s, "://") {
+		s = strings.Split(s, "://")[1]
+	}
 
 	// rucaptcha uses same api as 2captcha, its just different name
 	if s == "rucaptcha" {

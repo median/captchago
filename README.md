@@ -1,5 +1,5 @@
 # CaptchaGO
-Easily integrate and support many different captcha APIs in your Go project.
+Easily integrate and support many captcha services in your Go project.
 
 [View usage examples](examples)
 
@@ -10,7 +10,7 @@ go get github.com/median/captchago
 
 ## Supported Services
 - [x] [2captcha (ruCaptcha)](https://2captcha.com)
-- [x] [AntiCaptcha](https://anti-captcha.com)
+- [x] [AntiCaptcha](http://getcaptchasolution.com/ielxn7dpk3)
 - [x] [CapMonster](https://capmonster.cloud)
 - [x] [AnyCaptcha](https://anycaptcha.com)
 - [x] [CapSolver](https://capsolver.com)
@@ -21,3 +21,4 @@ go get github.com/median/captchago
 - [x] Recaptcha V3
 - [x] HCaptcha
 - [x] FunCaptcha
+- [x] Get Balance
