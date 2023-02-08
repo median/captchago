@@ -60,6 +60,67 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 		return int(taskId.(float64)), nil
 	}
 
+	// parseResponse returns should continue, solution, error
+	parseResponse := func(body map[string]interface{}) (bool, *Solution, error) {
+		errMsg, hasError := body["errorDescription"]
+		if hasError && errMsg != nil {
+			return false, nil, errors.New(errMsg.(string))
+		}
+
+		status := body["status"]
+
+		switch status {
+		case "processing":
+			return true, nil, nil
+		case "ready":
+			solution, hasSolution := body["solution"].(map[string]interface{})
+			if !hasSolution {
+				return false, nil, errors.New("no solution")
+			}
+
+			// response can either be gRecaptchaResponse or token
+			response := solution["gRecaptchaResponse"]
+
+			if response == nil {
+				response = solution["token"]
+			}
+
+			if response == nil {
+				response = solution["x-kpsdk-ct"]
+			}
+
+			if response == nil {
+				if solver.Verbose {
+					fmt.Println(body)
+				}
+
+				return false, nil, errors.New("no solution text")
+			}
+
+			ip := ""
+			cost := ""
+
+			rIP, hasIP := body["ip"]
+			if hasIP && rIP != nil {
+				ip = rIP.(string)
+			}
+
+			rCost, hasCost := body["cost"]
+			if hasCost && rCost != nil {
+				cost = rCost.(string)
+			}
+
+			return false, &Solution{
+				Text:        response.(string),
+				RawSolution: solution,
+				IP:          ip,
+				Cost:        cost,
+			}, nil
+		default:
+			return false, nil, errors.New("unknown status")
+		}
+	}
+
 	// keeps retrying until it has returned error or solved
 	getResponse := func(taskId int) (*Solution, error) {
 		for {
@@ -84,64 +145,17 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 				continue
 			}
 
-			errMsg, hasError := body["errorDescription"]
-			if hasError && errMsg != nil {
-				return nil, errors.New(errMsg.(string))
+			shouldContinue, sol, err := parseResponse(body)
+			if err != nil {
+				return nil, err
 			}
 
-			status := body["status"]
-
-			switch status {
-			case "processing":
+			if shouldContinue {
 				continue
-			case "ready":
-				solution, hasSolution := body["solution"].(map[string]interface{})
-				if !hasSolution {
-					return nil, errors.New("no solution")
-				}
-
-				// response can either be gRecaptchaResponse or token
-				response := solution["gRecaptchaResponse"]
-
-				if response == nil {
-					response = solution["token"]
-				}
-
-				if response == nil {
-					response = solution["x-kpsdk-ct"]
-				}
-
-				if response == nil {
-					if solver.Verbose {
-						fmt.Println(body)
-					}
-
-					return nil, errors.New("no solution text")
-				}
-
-				ip := ""
-				cost := ""
-
-				rIP, hasIP := body["ip"]
-				if hasIP && rIP != nil {
-					ip = rIP.(string)
-				}
-
-				rCost, hasCost := body["cost"]
-				if hasCost && rCost != nil {
-					cost = rCost.(string)
-				}
-
-				return &Solution{
-					TaskId:      taskId,
-					Text:        response.(string),
-					RawSolution: solution,
-					IP:          ip,
-					Cost:        cost,
-				}, nil
-			default:
-				return nil, errors.New("unknown status")
 			}
+
+			sol.TaskId = taskId
+			return sol, nil
 		}
 	}
 
@@ -328,22 +342,45 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 	// kasada method
 	if solver.service == CapSolver {
 		methods.Kasada = func(o KasadaOptions) (*KasadaSolution, error) {
+			if o.Proxy == nil {
+				return nil, errors.New("proxy is required")
+			}
+
 			taskData := map[string]interface{}{
-				"type":      "AntiKasadaTask",
-				"pageURL":   o.PageURL,
-				"cd":        o.DetailedCD,
-				"onlyCD":    o.OnlyCD,
-				"version":   o.Version,
-				"userAgent": o.UserAgent,
+				"pageURL": o.PageURL,
+				"cd":      o.DetailedCD,
+				"onlyCD":  o.OnlyCD,
 			}
 
-			if o.Proxy != nil {
-				taskData["proxy"] = o.Proxy.String()
+			applyProxy(taskData, o.Proxy, "AntiKasadaTask")
+
+			if o.Version != "" {
+				taskData["version"] = o.Version
 			}
 
-			sol, err := createResponse(taskData)
+			if o.UserAgent != "" {
+				taskData["userAgent"] = o.UserAgent
+			}
+
+			// send request to /kasada/invoke
+			payload := map[string]interface{}{
+				"clientKey": solver.ApiKey,
+				"task":      taskData,
+				"appId":     "B7E57F27-0AD3-434D-A5B7-CF9EE7D093EF",
+			}
+
+			body, err := postJSON(domain()+"/kasada/invoke", payload)
 			if err != nil {
 				return nil, err
+			}
+
+			_, sol, err := parseResponse(body)
+			if err != nil {
+				return nil, err
+			}
+
+			if sol == nil {
+				return nil, errors.New("no solution")
 			}
 
 			kpsdkCD := ""

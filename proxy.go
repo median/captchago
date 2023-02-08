@@ -56,12 +56,22 @@ func NewProxy(t ProxyType, address string, port int, login *ProxyLogon) *Proxy {
 	}
 }
 
+// String only returns the proxy address and port
 func (p *Proxy) String() string {
 	if p == nil {
 		return ""
 	}
 
 	return p.login.String() + p.address + ":" + strconv.Itoa(p.port)
+}
+
+// FullString returns the proxy address, port and type
+func (p *Proxy) FullString() string {
+	if p == nil {
+		return ""
+	}
+
+	return p.pType + "://" + p.login.String() + p.address + ":" + strconv.Itoa(p.port)
 }
 
 func (pl *ProxyLogon) String() string {

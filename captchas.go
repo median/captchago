@@ -88,9 +88,12 @@ type FunCaptchaOptions struct {
 	Data string
 }
 
+// KasadaOptions Make sure to set the proxy as its required
 type KasadaOptions struct {
 	PageURL string
-	Proxy   *Proxy
+
+	// Proxy is required
+	Proxy *Proxy
 
 	// DetailedCD Enable if you need more detailed x-kpsdk-cd, including params such as duration, st and rst
 	DetailedCD bool
