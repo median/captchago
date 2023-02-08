@@ -30,9 +30,10 @@ func New(service SolveService, apiKey string) (*Solver, error) {
 }
 
 func (s *Solver) SetService(service SolveService) error {
-	service = formatService(service)
+	oldService := s.service
+	s.service = formatService(service)
 
-	switch service {
+	switch s.service {
 	case AntiCaptcha:
 		s.methods = antiCaptchaMethods(s, "api.anti-captcha.com")
 		break
@@ -47,11 +48,11 @@ func (s *Solver) SetService(service SolveService) error {
 		break
 	case TwoCaptcha:
 		s.methods = twoCaptchaMethods(s, "2captcha.com")
+		break
 	default:
+		s.service = oldService
 		return errors.New("that service isn't supported")
 	}
-
-	s.service = service
 	return nil
 }
 
