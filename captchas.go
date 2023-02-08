@@ -10,6 +10,7 @@ type solveMethods struct {
 	RecaptchaV3 func(RecaptchaV3Options) (*Solution, error)
 	HCaptcha    func(HCaptchaOptions) (*Solution, error)
 	FunCaptcha  func(FunCaptchaOptions) (*Solution, error)
+	Kasada      func(KasadaOptions) (*KasadaSolution, error)
 }
 
 // GetBalance returns the balance of the account
@@ -49,6 +50,14 @@ func (s *Solver) FunCaptcha(o FunCaptchaOptions) (*Solution, error) {
 	return s.methods.FunCaptcha(o)
 }
 
+// Kasada is only supported with capsolver.com
+func (s *Solver) Kasada(o KasadaOptions) (*KasadaSolution, error) {
+	if s.methods.Kasada == nil {
+		return nil, errors.New("service does not support kasada")
+	}
+	return s.methods.Kasada(o)
+}
+
 // RecaptchaV3Options All fields are required
 type RecaptchaV3Options struct {
 	PageURL    string
@@ -77,6 +86,23 @@ type FunCaptchaOptions struct {
 
 	// Data is the extra data. Can look like: {"\blob\":\"HERE_COMES_THE_blob_VALUE\"}
 	Data string
+}
+
+type KasadaOptions struct {
+	PageURL string
+	Proxy   *Proxy
+
+	// DetailedCD Enable if you need more detailed x-kpsdk-cd, including params such as duration, st and rst
+	DetailedCD bool
+
+	// OnlyCD Enable if the solution contains only x-kpsdk-cd
+	OnlyCD bool
+
+	// Version Currently supports 2.0 and 3.0, default is 3.0
+	Version string
+
+	// UserAgent Browser's User-Agent which is used in emulation. Default is random
+	UserAgent string
 }
 
 type HCaptchaOptions struct {
@@ -122,6 +148,9 @@ type Solution struct {
 	Text   string
 	TaskId int
 
+	// RawSolution not supported on 2captcha methods
+	RawSolution map[string]interface{}
+
 	// Speed the time in milliseconds that the captcha took to solve
 	Speed int64
 
@@ -133,4 +162,17 @@ type Solution struct {
 
 	// IP can be "" if the service does not return IP
 	IP string
+}
+
+type KasadaSolution struct {
+	*Solution
+
+	// KpsdkCT is the 'x-kpsdk-ct' header
+	KpsdkCT string
+
+	// KpsdkCD is the 'x-kpsdk-cd' header
+	KpsdkCD string
+
+	// UserAgent is the user agent used to solve the captcha
+	UserAgent string
 }

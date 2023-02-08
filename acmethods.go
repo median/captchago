@@ -38,6 +38,8 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 			payload["softId"] = 1080
 		} else if strings.Contains(d, "capmonster.cloud") {
 			payload["softId"] = 59
+		} else if strings.Contains(d, "capsolver.com") {
+			payload["appId"] = "B7E57F27-0AD3-434D-A5B7-CF9EE7D093EF"
 		}
 
 		body, err := postJSON(d+"/createTask", payload)
@@ -93,16 +95,20 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 			case "processing":
 				continue
 			case "ready":
-				solution, hasSolution := body["solution"]
+				solution, hasSolution := body["solution"].(map[string]interface{})
 				if !hasSolution {
 					return nil, errors.New("no solution")
 				}
 
 				// response can either be gRecaptchaResponse or token
-				response := solution.(map[string]interface{})["gRecaptchaResponse"]
+				response := solution["gRecaptchaResponse"]
 
 				if response == nil {
-					response = solution.(map[string]interface{})["token"]
+					response = solution["token"]
+				}
+
+				if response == nil {
+					response = solution["x-kpsdk-ct"]
 				}
 
 				if response == nil {
@@ -127,10 +133,11 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 				}
 
 				return &Solution{
-					TaskId: taskId,
-					Text:   response.(string),
-					IP:     ip,
-					Cost:   cost,
+					TaskId:      taskId,
+					Text:        response.(string),
+					RawSolution: solution,
+					IP:          ip,
+					Cost:        cost,
 				}, nil
 			default:
 				return nil, errors.New("unknown status")
@@ -183,7 +190,7 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 		data["proxyType"] = t
 	}
 
-	return &solveMethods{
+	methods := &solveMethods{
 		GetBalance: func() (float64, error) {
 			d := domain()
 
@@ -317,4 +324,55 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 			return createResponse(taskData)
 		},
 	}
+
+	// kasada method
+	if solver.service == CapSolver {
+		methods.Kasada = func(o KasadaOptions) (*KasadaSolution, error) {
+			taskData := map[string]interface{}{
+				"type":      "AntiKasadaTask",
+				"pageURL":   o.PageURL,
+				"cd":        o.DetailedCD,
+				"onlyCD":    o.OnlyCD,
+				"version":   o.Version,
+				"userAgent": o.UserAgent,
+			}
+
+			if o.Proxy != nil {
+				taskData["proxy"] = o.Proxy.String()
+			}
+
+			sol, err := createResponse(taskData)
+			if err != nil {
+				return nil, err
+			}
+
+			kpsdkCD := ""
+			kpsdkCT := ""
+			userAgent := ""
+
+			raw := sol.RawSolution["x-kpsdk-cd"]
+			if raw != nil {
+				kpsdkCD = raw.(string)
+			}
+
+			raw = sol.RawSolution["x-kpsdk-ct"]
+			if raw != nil {
+				kpsdkCT = raw.(string)
+			}
+
+			raw = sol.RawSolution["user-agent"]
+			if raw != nil {
+				userAgent = raw.(string)
+			}
+
+			return &KasadaSolution{
+				Solution:  sol,
+				KpsdkCD:   kpsdkCD,
+				KpsdkCT:   kpsdkCT,
+				UserAgent: userAgent,
+			}, nil
+		}
+	}
+
+	return methods
 }
