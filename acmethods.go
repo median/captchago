@@ -86,6 +86,10 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 			}
 
 			if response == nil {
+				response = solution["x-kpsdk-cd"]
+			}
+
+			if response == nil {
 				response = solution["x-kpsdk-ct"]
 			}
 
