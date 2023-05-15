@@ -136,6 +136,14 @@ func twoCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 				payload["data-s"] = o.DataS
 			}
 
+			if o.APIDomain != "" {
+				payload["domain"] = o.APIDomain
+			}
+
+			if o.Enterprise != nil {
+				payload["enterprise"] = 1
+			}
+
 			if o.Cookies != nil && len(o.Cookies) > 0 {
 				payload["cookies"] = cookiesToString(o.Cookies)
 			}

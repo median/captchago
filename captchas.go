@@ -145,11 +145,15 @@ type RecaptchaV2Options struct {
 	Invisible bool
 	// Enterprise only works on some captcha services (optional)
 	Enterprise map[string]interface{}
+	// APIDomain is the domain of the recaptcha (optional)
+	APIDomain string
 }
 
 type Solution struct {
-	Text   string
-	TaskId int
+	Text string
+
+	// TaskId is normally a int, but can be a string depending on the service
+	TaskId any
 
 	// RawSolution not supported on 2captcha methods
 	RawSolution map[string]interface{}

@@ -26,7 +26,7 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 		return r
 	}
 
-	createTask := func(task map[string]interface{}) (int, error) {
+	createTask := func(task map[string]interface{}) (any, error) {
 		d := domain()
 
 		payload := map[string]interface{}{
@@ -55,6 +55,11 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 		taskId, hasTaskId := body["taskId"]
 		if !hasTaskId {
 			return 0, errors.New("no taskId")
+		}
+
+		taskStr, ok := taskId.(string)
+		if ok {
+			return taskStr, nil
 		}
 
 		return int(taskId.(float64)), nil
@@ -126,7 +131,7 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 	}
 
 	// keeps retrying until it has returned error or solved
-	getResponse := func(taskId int) (*Solution, error) {
+	getResponse := func(taskId any) (*Solution, error) {
 		for {
 			time.Sleep(solver.UpdateDelay)
 
@@ -249,6 +254,10 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 
 			if o.UserAgent != "" {
 				taskData["userAgent"] = o.UserAgent
+			}
+
+			if o.APIDomain != "" {
+				taskData["apiDomain"] = o.APIDomain
 			}
 
 			if o.Cookies != nil && len(o.Cookies) > 0 {
