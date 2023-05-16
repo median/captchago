@@ -28,7 +28,7 @@ func twoCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 		d := domain()
 
 		base["key"] = solver.ApiKey
-		base["soft_id"] = 3413
+		base["soft_id"] = 3891
 
 		body, err := postQuery(d+"/in.php", base)
 		if err != nil {
