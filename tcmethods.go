@@ -229,5 +229,28 @@ func twoCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 
 			return createResponse(payload)
 		},
+		Cloudflare: func(o CloudflareOptions) (*Solution, error) {
+			payload := map[string]interface{}{
+				"method":  "turnstile",
+				"sitekey": o.SiteKey,
+				"pageurl": o.PageURL,
+			}
+
+			if o.Action != "" {
+				payload["action"] = o.Action
+			}
+
+			if o.CData != "" {
+				payload["data"] = o.CData
+			}
+
+			if o.Metadata != nil {
+				for k, v := range o.Metadata {
+					payload[k] = v
+				}
+			}
+
+			return createResponse(payload)
+		},
 	}
 }

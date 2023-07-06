@@ -277,22 +277,29 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 				"isInvisible": o.Invisible,
 			}
 
-			applyProxy(taskData, o.Proxy, "HCaptchaTask")
+			baseTask := "HCaptchaTask"
+			if solver.service == CapSolver {
+				baseTask = "HCaptchaTurboTask"
+			}
+
+			applyProxy(taskData, o.Proxy, baseTask)
 
 			if o.UserAgent != "" {
 				taskData["userAgent"] = o.UserAgent
 			}
 
 			if o.EnterprisePayload != nil {
+				ep := o.EnterprisePayload
+
 				// some apis are slightly different
-				if o.EnterprisePayload.RQData != "" {
+				if ep.RQData != "" {
 					taskData["data"] = o.EnterprisePayload.RQData
 				}
 
-				ep := o.EnterprisePayload
+				payload := map[string]interface{}{}
 
-				payload := map[string]interface{}{
-					"sentry": ep.Sentry,
+				if ep.Sentry {
+					payload["sentry"] = ep.Sentry
 				}
 
 				if ep.RQData != "" {
@@ -421,6 +428,74 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 				KpsdkCT:   kpsdkCT,
 				UserAgent: userAgent,
 			}, nil
+		}
+
+		methods.Cloudflare = func(o CloudflareOptions) (*Solution, error) {
+			if o.Proxy == nil {
+				return nil, errors.New("proxy is required")
+			}
+
+			if o.Metadata == nil {
+				o.Metadata = map[string]string{}
+			}
+
+			// only set metadata type if one wasn't provided
+			if _, ok := o.Metadata["type"]; !ok {
+				switch o.Type {
+				case CloudflareTypeChallenge:
+					o.Metadata["type"] = "challenge"
+				case CloudflareTypeTurnstile:
+					o.Metadata["type"] = "turnstile"
+				default:
+					o.Metadata["type"] = ""
+				}
+			}
+
+			if _, ok := o.Metadata["action"]; !ok && o.Action != "" {
+				o.Metadata["action"] = o.Action
+			}
+
+			if _, ok := o.Metadata["cdata"]; !ok && o.CData != "" {
+				o.Metadata["cdata"] = o.CData
+			}
+
+			taskData := map[string]interface{}{
+				"websiteURL": o.PageURL,
+				"metadata":   o.Metadata,
+			}
+
+			if o.SiteKey != "" {
+				taskData["websiteKey"] = o.SiteKey
+			}
+
+			applyProxy(taskData, o.Proxy, "AntiCloudflareTask")
+
+			return createResponse(taskData)
+		}
+	} else {
+		methods.Cloudflare = func(o CloudflareOptions) (*Solution, error) {
+			if o.Type == CloudflareTypeChallenge {
+				return nil, errors.New("cloudflare challenge type is not supported by this solver")
+			}
+
+			taskData := map[string]interface{}{
+				"websiteURL": o.PageURL,
+				"websiteKey": o.SiteKey,
+			}
+
+			if o.Action != "" {
+				taskData["action"] = o.Action
+			}
+
+			if o.Metadata != nil {
+				for k, v := range o.Metadata {
+					taskData[k] = v
+				}
+			}
+
+			applyProxy(taskData, o.Proxy, "TurnstileTask")
+
+			return createResponse(taskData)
 		}
 	}
 

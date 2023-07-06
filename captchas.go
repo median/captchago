@@ -11,6 +11,7 @@ type solveMethods struct {
 	HCaptcha    func(HCaptchaOptions) (*Solution, error)
 	FunCaptcha  func(FunCaptchaOptions) (*Solution, error)
 	Kasada      func(KasadaOptions) (*KasadaSolution, error)
+	Cloudflare  func(CloudflareOptions) (*Solution, error)
 }
 
 // GetBalance returns the balance of the account
@@ -48,6 +49,13 @@ func (s *Solver) FunCaptcha(o FunCaptchaOptions) (*Solution, error) {
 		return nil, errors.New("service does not support funCaptcha")
 	}
 	return s.methods.FunCaptcha(o)
+}
+
+func (s *Solver) Cloudflare(o CloudflareOptions) (*Solution, error) {
+	if s.methods.Cloudflare == nil {
+		return nil, errors.New("service does not support cloudflare")
+	}
+	return s.methods.Cloudflare(o)
 }
 
 // Kasada is only supported with capsolver.com
@@ -149,6 +157,28 @@ type RecaptchaV2Options struct {
 	APIDomain string
 }
 
+// CloudflareOptions cloudflare challenges only work with capsolver.com, turnstile works with other solvers
+type CloudflareOptions struct {
+	PageURL string
+	Proxy   *Proxy
+
+	// SiteKey is only used for CloudflareTypeTurnstile
+	SiteKey string
+
+	// Type must only be CloudflareTypeTurnstile if the solver is not capsolver.com
+	Type CloudflareType
+
+	// Metadata will only be used on capsolver.com, for any other solver it will just append the fields
+	Metadata map[string]string
+
+	// Action and CData are only used for turnstile. CData is only used for 2captcha and capsolver.com
+	Action string
+	CData  string
+
+	// HTML is only needed for cloudflare challenges
+	HTML string
+}
+
 type Solution struct {
 	Text string
 
@@ -183,3 +213,10 @@ type KasadaSolution struct {
 	// UserAgent is the user agent used to solve the captcha
 	UserAgent string
 }
+
+type CloudflareType int
+
+const (
+	CloudflareTypeTurnstile CloudflareType = iota
+	CloudflareTypeChallenge
+)
