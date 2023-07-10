@@ -278,7 +278,9 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 			}
 
 			baseTask := "HCaptchaTask"
-			if solver.service == CapSolver {
+
+			// for capsolver.com HCaptchaTurboTask than the regular task is better, but requires proxy
+			if solver.service == CapSolver && o.Proxy != nil {
 				baseTask = "HCaptchaTurboTask"
 			}
 
