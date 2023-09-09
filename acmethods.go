@@ -116,11 +116,13 @@ func antiCaptchaMethods(solver *Solver, preferredDomain string) *solveMethods {
 
 			rCost, hasCost := body["cost"]
 			if hasCost && rCost != nil {
-				cost = rCost.(string)
+				cost = fmt.Sprintf("%v", rCost)
 			}
 
+			text, _ := response.(string)
+
 			return false, &Solution{
-				Text:        response.(string),
+				Text:        text,
 				RawSolution: solution,
 				IP:          ip,
 				Cost:        cost,
